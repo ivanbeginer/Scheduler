@@ -4,18 +4,17 @@ class Scheduler:
     def __init__(self,url:str):
         self.url = url
 
-
     def get_json(self):
         res = requests.get(self.url).json()
         return res
     def get_busy_slots(self, date:str):
-        s = self.get_json()
+        data = self.get_json()
         busy_slots = []
-        day = next((day for day in s['days'] if day['date']==date),None)
+        day = next((day for day in data['days'] if day['date']==date),None)
         if not day:
             raise ValueError('Такой день отсутсвует')
 
-        for timeslot in s['timeslots']:
+        for timeslot in data['timeslots']:
             if timeslot['day_id']==day['id']:
                 busy_slots.append((timeslot['start'],timeslot['end']))
         busy_slots.sort(key=lambda x: x[0])
@@ -46,7 +45,6 @@ class Scheduler:
     def is_available(self,date,slot_start,slot_end):
         if slot_start < slot_end:
             free_slots = self.get_free_slots(date)
-
             for start,end in free_slots:
                 if slot_start >= start and slot_end <= end:
                     return True
@@ -55,9 +53,22 @@ class Scheduler:
 
     def find_slot_for_duration(self,duration_minutes=60|90):
         data = self.get_json()
+        slots = []
+        for j in range(len(data['timeslots'])):
 
+            start_hours,start_minutes = map(int,data['timeslots'][j]['start'].split(':'))
+            start_total_minutes = start_hours * 60 + start_minutes
+            end_hours, end_minutes = map(int, data['timeslots'][j]['end'].split(':'))
+            end_total_minutes = end_hours * 60 + end_minutes
+
+            day = next(day['date'] for day in data['days'] if day['id']==data['timeslots'][j]['day_id'])
+
+            if duration_minutes==end_total_minutes-start_total_minutes:
+                slots.append((day,data['timeslots'][j]['start'],data['timeslots'][j]['end']))
+        return slots
 
 s = Scheduler('https://ofc-test-01.tspb.su/test-task/')
 print(s.get_busy_slots('2025-02-15'))
 print(s.get_free_slots('2025-02-15'))
-print(s.is_available('2025-02-15','20:00','20:02'))
+print(s.is_available('2025-02-15','20:00','20:50'))
+print((s.find_slot_for_duration(duration_minutes=90)))
