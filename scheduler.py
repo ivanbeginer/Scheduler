@@ -63,16 +63,16 @@ class Scheduler:
                 end = end_slot_hours * 60 + end_slot_minutes
 
                 if end - start == duration_minutes:
-                    return start_slot,end_slot
+                    return day['date'],start_slot,end_slot
                 elif end - start > duration_minutes:
                     new_end = start+duration_minutes
                     new_end_h = new_end // 60
                     new_end_m = new_end % 60
                     new_end_slot = f"{new_end_h:02d}:{new_end_m:02d}"
-                    return start_slot,new_end_slot
+                    return day['date'],start_slot,new_end_slot
         return False
 s = Scheduler('https://ofc-test-01.tspb.su/test-task/')
-print(s.get_busy_slots('2025-02-15'))
-print(s.get_free_slots('2025-02-15'))
-print(s.is_available('2025-02-15','20:00','20:50'))
+print(s.get_busy_slots('2025-02-18'))
+print(s.get_free_slots('2025-02-18'))
+print(s.is_available('2025-02-18','11:00','11:29'))
 print((s.find_slot_for_duration(duration_minutes=60)))
