@@ -53,22 +53,26 @@ class Scheduler:
 
     def find_slot_for_duration(self,duration_minutes=60|90):
         data = self.get_json()
-        slots = []
-        for j in range(len(data['timeslots'])):
+        days = data['days']
+        for day in days:
+            free_slots = self.get_free_slots(day['date'])
+            for start_slot,end_slot in free_slots:
+                start_slot_hours,start_slot_minutes = map(int,start_slot.split(':'))
+                end_slot_hours, end_slot_minutes = map(int, end_slot.split(':'))
+                start = start_slot_hours * 60 + start_slot_minutes
+                end = end_slot_hours * 60 + end_slot_minutes
 
-            start_hours,start_minutes = map(int,data['timeslots'][j]['start'].split(':'))
-            start_total_minutes = start_hours * 60 + start_minutes
-            end_hours, end_minutes = map(int, data['timeslots'][j]['end'].split(':'))
-            end_total_minutes = end_hours * 60 + end_minutes
-
-            day = next(day['date'] for day in data['days'] if day['id']==data['timeslots'][j]['day_id'])
-
-            if duration_minutes==end_total_minutes-start_total_minutes:
-                slots.append((day,data['timeslots'][j]['start'],data['timeslots'][j]['end']))
-        return slots
-
+                if end - start == duration_minutes:
+                    return start_slot,end_slot
+                elif end - start > duration_minutes:
+                    new_end = start+duration_minutes
+                    new_end_h = new_end // 60
+                    new_end_m = new_end % 60
+                    new_end_slot = f"{new_end_h:02d}:{new_end_m:02d}"
+                    return start_slot,new_end_slot
+        return False
 s = Scheduler('https://ofc-test-01.tspb.su/test-task/')
 print(s.get_busy_slots('2025-02-15'))
 print(s.get_free_slots('2025-02-15'))
 print(s.is_available('2025-02-15','20:00','20:50'))
-print((s.find_slot_for_duration(duration_minutes=90)))
+print((s.find_slot_for_duration(duration_minutes=60)))
