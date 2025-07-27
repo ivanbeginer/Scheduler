@@ -51,28 +51,41 @@ class Scheduler:
             return False
         raise ValueError('Введите значение по возрастанию')
 
-    def find_slot_for_duration(self,duration_minutes=60|90):
+    def _time_to_minutes(self, time_str):
+        hours, minutes = map(int, time_str.split(':'))
+        return hours * 60 + minutes
+
+    def _minutes_to_time(self, minutes):
+        h = minutes // 60
+        m = minutes % 60
+        return f"{h:02d}:{m:02d}"
+    def find_slot_for_duration(self, duration_minutes=60|90):
         data = self.get_json()
         days = data['days']
+
+
         for day in days:
             free_slots = self.get_free_slots(day['date'])
-            for start_slot,end_slot in free_slots:
-                start_slot_hours,start_slot_minutes = map(int,start_slot.split(':'))
-                end_slot_hours, end_slot_minutes = map(int, end_slot.split(':'))
-                start = start_slot_hours * 60 + start_slot_minutes
-                end = end_slot_hours * 60 + end_slot_minutes
-
+            for start_slot, end_slot in free_slots:
+                start = self._time_to_minutes(start_slot)
+                end = self._time_to_minutes(end_slot)
                 if end - start == duration_minutes:
-                    return day['date'],start_slot,end_slot
-                elif end - start > duration_minutes:
-                    new_end = start+duration_minutes
-                    new_end_h = new_end // 60
-                    new_end_m = new_end % 60
-                    new_end_slot = f"{new_end_h:02d}:{new_end_m:02d}"
-                    return day['date'],start_slot,new_end_slot
+                    return day['date'], start_slot, end_slot
+
+
+        for day in days:
+            free_slots = self.get_free_slots(day['date'])
+            for start_slot, end_slot in free_slots:
+                start = self._time_to_minutes(start_slot)
+                end = self._time_to_minutes(end_slot)
+                if end - start > duration_minutes:
+                    new_end = start + duration_minutes
+                    new_end_slot = self._minutes_to_time(new_end)
+                    return day['date'], start_slot, new_end_slot
+
         return False
 s = Scheduler('https://ofc-test-01.tspb.su/test-task/')
-print(s.get_busy_slots('2025-02-18'))
-print(s.get_free_slots('2025-02-18'))
-print(s.is_available('2025-02-18','11:00','11:29'))
-print((s.find_slot_for_duration(duration_minutes=60)))
+print(s.get_busy_slots('2025-02-15'))
+print(s.get_free_slots('2025-02-15'))
+print(s.is_available('2025-02-15','11:30','12:30'))
+print((s.find_slot_for_duration(duration_minutes=90)))
